@@ -28,7 +28,7 @@ class Yahtzee:
         # Initial dice roll.
         self.round = 0
         self.rerolls = MAX_REROLLS
-        self.__roll_dice(self.dice, np.arange(NUM_DICE))
+        self.__roll_dice(np.arange(NUM_DICE))
 
 
     def __roll_dice(self, indices):
