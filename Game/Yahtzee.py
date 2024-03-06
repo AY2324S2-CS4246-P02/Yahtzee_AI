@@ -28,7 +28,7 @@ class Yahtzee:
         # Initial dice roll.
         self.round = 0
         self.rerolls = MAX_REROLLS
-        self.__roll_dice(self.dice, np.arange(NUM_DICE))
+        self.__roll_dice(np.arange(NUM_DICE))
 
 
     def __roll_dice(self, indices):
@@ -171,9 +171,9 @@ CATEGORIES_CHECK = [
     lambda dice: max([dice.count(die) for die in set(dice)]) >= 4,
     lambda dice: (max([dice.count(die) for die in set(dice)]) == 3 and 
                   min([dice.count(die) for die in set(dice)]) == 2),
-    lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))[:4]]) or
-                  all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))[1:]])),
-    lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))]),
+    lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:4])]) or
+                  all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[2:])])),
+    lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:])]),
     lambda dice: len(set(dice)) == 1,
     lambda dice: True,
     lambda dice: True
