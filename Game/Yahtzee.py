@@ -144,11 +144,11 @@ CATEGORIES_NAMES = [
 
 CATEGORIES_SCORING = [
     lambda dice: dice.count(1),
-    lambda dice: dice.count(2),
-    lambda dice: dice.count(3),
-    lambda dice: dice.count(4),
-    lambda dice: dice.count(5),
-    lambda dice: dice.count(6),
+    lambda dice: dice.count(2) * 2,
+    lambda dice: dice.count(3) * 3,
+    lambda dice: dice.count(4) * 4,
+    lambda dice: dice.count(5) * 5,
+    lambda dice: dice.count(6) * 6,
     lambda dice: sum(dice),
     lambda dice: sum(dice),
     lambda dice: 25,
