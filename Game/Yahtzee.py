@@ -30,6 +30,7 @@ class Yahtzee:
         self.rerolls = MAX_REROLLS
         self.__roll_dice(self.dice, np.arange(NUM_DICE))
 
+
     def __roll_dice(self, indices):
         """
         Rolls the dice of specified indices.
@@ -52,10 +53,21 @@ class Yahtzee:
             self.log[self.round, 2].append(self.dice)
         
         self.rerolls -= 1
-    
+
+
     def get_dice(self):
         return self.dice
-    
+
+
+    def get_available_categories(self):
+        """
+        Returns indices of all available (non-written) categories.
+        Returns empty list if all categories are written and game is over.
+        """
+        available_categories = np.nonzero(self.scoresheet != EMPTY)
+        return available_categories
+
+
     def write_score(self, category):
         """
         Writes into the score sheet at the category specified with the current dice roll.
@@ -100,7 +112,8 @@ class Yahtzee:
             # Rerolls the next round dice (not a choice).
             self.__roll_dice(self.dice, np.arange(NUM_DICE))
             return 0
-    
+
+
     def calculate_score(self):
         """
         Calculates total score of the current score sheet.
@@ -128,6 +141,7 @@ CATEGORIES_NAMES = [
     'Bonus',
 ]
 
+
 CATEGORIES_SCORING = [
     lambda dice: dice.count(1),
     lambda dice: dice.count(2),
@@ -144,6 +158,7 @@ CATEGORIES_SCORING = [
     lambda dice: sum(dice),
     lambda dice: 35
 ]
+
 
 CATEGORIES_CHECK = [
     lambda dice: True,
@@ -163,6 +178,7 @@ CATEGORIES_CHECK = [
     lambda dice: True,
     lambda dice: True
 ]
+
 
 CATEGORIES = dict(
     [(name, (score, check)) for name, score, check in zip(
