@@ -58,6 +58,18 @@ class Yahtzee:
 
     def get_dice(self):
         return self.dice
+    
+    
+    def get_rerolls(self):
+        return self.rerolls
+    
+
+    def get_round(self):
+        return self.round
+    
+
+    def get_scoresheet(self):
+        return self.scoresheet
 
 
     def potential_score(self):
