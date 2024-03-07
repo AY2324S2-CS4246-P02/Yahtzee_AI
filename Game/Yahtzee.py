@@ -17,6 +17,7 @@ class Yahtzee:
         # Stage setup.
         self.dice = np.zeros(NUM_DICE, dtype=np.uint8)
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
+        self.scoresheet[NUM_CATEGORIES] = 0  # Bonus category should be initialized to 0 not EMPTY
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
         # Log is (NUM_CATEGORIES x 3) array where:
         #       First column: Category chosen
@@ -113,7 +114,7 @@ class Yahtzee:
 
         Parameters:
         category (int): Integer of category index to write in.
-        dice (np.array of int): Dice to calculate score with, set to current dice if unspecified.
+        dice (np.array of int): Dice to calculate score with (will be logged), set to current dice if unspecified.
 
         Returns:
         int: 0 if successfully written (final score cannot be 0 because of Choice category).
@@ -126,8 +127,11 @@ class Yahtzee:
         if self.round >= NUM_CATEGORIES - 1:
             raise Exception("Game is already over.")
         
-        dice = self.dice if dice == None else dice
-        
+        if dice == None:
+            dice = self.dice
+        else:
+            self.log[self.round, 2].append(dice)
+
         # Calculate score.
         score = 0  # 0 if not applicable
         check = CATEGORIES_CHECK[category]
@@ -157,6 +161,33 @@ class Yahtzee:
             # Rerolls the next round dice (not a choice).
             self.__roll_dice(self.dice, np.arange(NUM_DICE))
             return 0
+
+
+    def undo_round(self):
+        """
+        Undo what has been done for the previous round.
+        Round and reroll counts are reset, dice is reset to the initial roll for the round.
+        Log is also cleared.
+        Throws an exception if there are no rounds to undo (round 0).
+        """
+        # Collecting info for round undo operation.
+        prev_round = self.round - 1
+        if prev_round < 0:
+            raise Exception("No rounds left to undo.")
+        prev_write = CATEGORIES_NAMES.index(self.log[prev_round, 0])
+        prev_rolls = self.log[prev_round, 2]
+        initial_roll = prev_rolls[0]
+        bonus_round = self.log[NUM_CATEGORIES, 2]
+
+        # Undo round.
+        self.round -= 1
+        self.rerolls = MAX_REROLLS - 1
+        self.dice = initial_roll
+        self.scoresheet[prev_write] = EMPTY
+        self.log[prev_round] = [None, None, None]
+        if bonus_round == prev_round:  # if bonus was also achieved previous round
+            self.scoresheet[NUM_CATEGORIES] = 0
+            self.log[NUM_CATEGORIES] = [None, None, None]
 
 
     def calculate_score(self):
