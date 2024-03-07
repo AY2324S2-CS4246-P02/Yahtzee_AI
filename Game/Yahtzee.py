@@ -93,14 +93,19 @@ class Yahtzee:
         return available_categories
 
 
-    def write_score(self, category):
+    def write_score(self, category, dice=None):
         """
-        Parameter: integer of category index to write in.
-        Writes into the score sheet at the category specified with the current dice roll.
+        Writes into the score sheet at the category with the current dice roll or specified dice.
         Automatically writes in and logs Bonus category if conditions satisfied.
-        Returns 0 if successfully written (final score cannot be 0 because of Choice category).
-        Returns the final score of the game if game is over.
         Throws an exception if attempted to write in Bonus category or already written category.
+
+        Parameters:
+        category (int): Integer of category index to write in.
+        dice (np.array of int): Dice to calculate score with, set to current dice if unspecified.
+
+        Returns:
+        int: 0 if successfully written (final score cannot be 0 because of Choice category).
+        int: Final score of the game if game is over.
         """
         if category == NUM_CATEGORIES:
             raise Exception("You cannot write in Bonus category.")
@@ -108,6 +113,8 @@ class Yahtzee:
             raise Exception("Category already written.")
         if self.round >= NUM_CATEGORIES - 1:
             raise Exception("Game is already over.")
+        
+        dice = self.dice if dice == None else dice
         
         # Calculate score.
         score = 0  # 0 if not applicable
