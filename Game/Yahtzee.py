@@ -33,6 +33,7 @@ class Yahtzee:
 
     def __roll_dice(self, indices):
         """
+        Takes in a list of integers of index ranging from 0 to number of dice.
         Rolls the dice of specified indices.
         Use get_dice() to see the result of the dice roll.
         Throws an exception if there are no more rerolls left, or when the game is over.
@@ -59,6 +60,19 @@ class Yahtzee:
         return self.dice
 
 
+    def potential_score(self):
+        """
+        Returns a scoresheet of potential score added if a category chosen is to be written with current dice.
+        By definition, upper section categories' scores also include bonus point if satisfied.
+        If the category is already filled, it is set to -1.
+        """
+        potential_sheet = np.full((NUM_CATEGORIES - 1), -1, int)
+        for category in potential_sheet:
+            if self.scoresheet[category] == EMPTY:
+                continue
+            
+
+
     def get_available_categories(self):
         """
         Returns indices of all available (non-written) categories.
@@ -70,6 +84,7 @@ class Yahtzee:
 
     def write_score(self, category):
         """
+        Parameter: integer of category index to write in.
         Writes into the score sheet at the category specified with the current dice roll.
         Automatically writes in and logs Bonus category if conditions satisfied.
         Returns 0 if successfully written (final score cannot be 0 because of Choice category).
