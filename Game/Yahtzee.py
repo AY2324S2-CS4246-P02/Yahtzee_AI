@@ -67,10 +67,21 @@ class Yahtzee:
         If the category is already filled, it is set to -1.
         """
         potential_sheet = np.full((NUM_CATEGORIES - 1), -1, int)
-        for category in potential_sheet:
-            if self.scoresheet[category] == EMPTY:
+        for category in range(NUM_CATEGORIES - 1):
+            if self.scoresheet[category] != EMPTY:
                 continue
-            
+            score = 0
+            check = CATEGORIES_CHECK[category]
+            if check(self.dice):
+                scoring = CATEGORIES_SCORING[category]
+                score = scoring(self.dice)
+            # Bonus check for upper section.
+            if category < NUM_UPPER:
+                bonus_check = np.sum(self.scoresheet[0:NUM_UPPER]) + score
+                if bonus_check >= BONUS_THRESHOLD:
+                    score += CATEGORIES_SCORING[NUM_CATEGORIES]
+            potential_sheet[category] = score
+        return potential_sheet
 
 
     def get_available_categories(self):
