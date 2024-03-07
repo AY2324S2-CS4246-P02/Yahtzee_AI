@@ -144,11 +144,11 @@ CATEGORIES_NAMES = [
 
 CATEGORIES_SCORING = [
     lambda dice: dice.count(1),
-    lambda dice: dice.count(2),
-    lambda dice: dice.count(3),
-    lambda dice: dice.count(4),
-    lambda dice: dice.count(5),
-    lambda dice: dice.count(6),
+    lambda dice: dice.count(2) * 2,
+    lambda dice: dice.count(3) * 3,
+    lambda dice: dice.count(4) * 4,
+    lambda dice: dice.count(5) * 5,
+    lambda dice: dice.count(6) * 6,
     lambda dice: sum(dice),
     lambda dice: sum(dice),
     lambda dice: 25,
@@ -171,9 +171,9 @@ CATEGORIES_CHECK = [
     lambda dice: max([dice.count(die) for die in set(dice)]) >= 4,
     lambda dice: (max([dice.count(die) for die in set(dice)]) == 3 and 
                   min([dice.count(die) for die in set(dice)]) == 2),
-    lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))[:4]]) or
-                  all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))[1:]])),
-    lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice))]),
+    lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:4])]) or
+                  all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[2:])])),
+    lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:])]),
     lambda dice: len(set(dice)) == 1,
     lambda dice: True,
     lambda dice: True
