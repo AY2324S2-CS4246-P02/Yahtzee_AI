@@ -17,7 +17,7 @@ class Yahtzee:
         # Stage setup.
         self.dice = np.zeros(NUM_DICE, dtype=np.uint8)
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
-        self.scoresheet[NUM_CATEGORIES] = 0  # Bonus category should be initialized to 0 not EMPTY
+        self.scoresheet[CATEGORY_NAME2ID['Bonus']] = 0  # Bonus category should be initialized to 0 not EMPTY
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
         # Log is (NUM_CATEGORIES x 3) array where:
         #       First column: Category chosen
@@ -31,7 +31,35 @@ class Yahtzee:
         self.rerolls = MAX_REROLLS
         self.__roll_dice(np.arange(NUM_DICE))
 
+    def reset(self):
+        self.round = 0
+        self.rerolls = MAX_REROLLS
+        self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
+        self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
+        self.__roll_dice(np.arange(NUM_DICE))
+        
+    # State: Tuple(dice: list, rerolls: int, available_categories: list)
+    def getCurrentState(self):
+        return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories()))
+    
+    # Returns nextState and rewards
+    # Action: Tuple(Literal['REROLL', 'KEEP'], Union[List[bool], str])
+    def doAction(self, action):
+        rewards = 0
+        # If action KEEP, calculate score as set it as reward
+        if action[0] == "KEEP":
+            rewards = self.getScore(action[1])
+            self.write_score(action[1])
+        else:
+            self.__roll_dice(np.arange(NUM_DICE))
+        return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
 
+    # Get the score for the chosen category
+    def getScore(self, category_id):
+        potential_scores = self.potential_score()
+        # print("Potential Scores:", potential_scores)
+        return potential_scores[category_id]
+    
     def __roll_dice(self, indices):
         """
         Takes in a list of integers of index ranging from 0 to number of dice.
@@ -90,9 +118,11 @@ class Yahtzee:
                 score = scoring(self.dice)
             # Bonus check for upper section.
             if category < NUM_UPPER:
-                bonus_check = np.sum(self.scoresheet[0:NUM_UPPER]) + score
+                segment = self.scoresheet[0:NUM_UPPER]
+                bonus_check = np.sum(segment[segment != EMPTY]) + score
+                # print("Bonus Check:", bonus_check)
                 if bonus_check >= BONUS_THRESHOLD:
-                    score += CATEGORIES_SCORING[NUM_CATEGORIES]
+                    score += CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
             potential_sheet[category] = score
         return potential_sheet
 
@@ -102,7 +132,9 @@ class Yahtzee:
         Returns indices of all available (non-written) categories.
         Returns empty list if all categories are written and game is over.
         """
-        available_categories = np.nonzero(self.scoresheet != EMPTY)
+        available_categories = np.nonzero(self.scoresheet == EMPTY)[0].tolist()
+        if NUM_CATEGORIES-1 in available_categories:
+            available_categories.remove(NUM_CATEGORIES-1)
         return available_categories
 
 
@@ -147,10 +179,10 @@ class Yahtzee:
         # Check for Bonus category.
         upper_score = np.sum(self.scoresheet[0:NUM_UPPER])
         if upper_score >= BONUS_THRESHOLD:
-            self.scoresheet[NUM_CATEGORIES] = CATEGORIES_SCORING[NUM_CATEGORIES]
-            self.log[NUM_CATEGORIES, 0] = CATEGORIES_NAMES[NUM_CATEGORIES]
-            self.log[NUM_CATEGORIES, 1] = CATEGORIES_SCORING[NUM_CATEGORIES]
-            self.log[NUM_CATEGORIES, 2] = self.round
+            self.scoresheet[NUM_CATEGORIES-1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
+            self.log[NUM_CATEGORIES-1, 0] = CATEGORIES_NAMES[NUM_CATEGORIES-1]
+            self.log[NUM_CATEGORIES-1, 1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
+            self.log[NUM_CATEGORIES-1, 2] = self.round
 
         # Set up for next round.
         self.round += 1
@@ -159,7 +191,7 @@ class Yahtzee:
             return self.calculate_score()
         else:
             # Rerolls the next round dice (not a choice).
-            self.__roll_dice(self.dice, np.arange(NUM_DICE))
+            self.__roll_dice(np.arange(NUM_DICE))
             return 0
 
 
@@ -217,14 +249,30 @@ CATEGORIES_NAMES = [
     'Bonus',
 ]
 
+CATEGORY_NAME2ID = {
+    'Ones': 0,
+    'Twos': 1,
+    'Threes': 2,
+    'Fours': 3,
+    'Fives': 4,
+    'Sixes': 5,
+    'Three-of-a-Kind': 6,
+    'Four-of-a-Kind': 7,
+    'Full House': 8,
+    'Small Straight': 9,
+    'Large Straight': 10,
+    'Yahtzee': 11,
+    'Chance': 12,
+    'Bonus': 13,
+}
 
 CATEGORIES_SCORING = [
-    lambda dice: dice.count(1),
-    lambda dice: dice.count(2) * 2,
-    lambda dice: dice.count(3) * 3,
-    lambda dice: dice.count(4) * 4,
-    lambda dice: dice.count(5) * 5,
-    lambda dice: dice.count(6) * 6,
+    lambda dice: np.count_nonzero(dice == 1),
+    lambda dice: np.count_nonzero(dice == 2) * 2,
+    lambda dice: np.count_nonzero(dice == 3) * 3,
+    lambda dice: np.count_nonzero(dice == 4) * 4,
+    lambda dice: np.count_nonzero(dice == 5) * 5,
+    lambda dice: np.count_nonzero(dice == 6) * 6,
     lambda dice: sum(dice),
     lambda dice: sum(dice),
     lambda dice: 25,
@@ -243,10 +291,10 @@ CATEGORIES_CHECK = [
     lambda dice: True,
     lambda dice: True,
     lambda dice: True,
-    lambda dice: max([dice.count(die) for die in set(dice)]) >= 3,
-    lambda dice: max([dice.count(die) for die in set(dice)]) >= 4,
-    lambda dice: (max([dice.count(die) for die in set(dice)]) == 3 and 
-                  min([dice.count(die) for die in set(dice)]) == 2),
+    lambda dice: max([np.count_nonzero(dice == die) for die in set(dice)]) >= 3,
+    lambda dice: max([np.count_nonzero(dice == die) for die in set(dice)]) >= 4,
+    lambda dice: (max([np.count_nonzero(dice == die) for die in set(dice)]) == 3 and 
+                  min([np.count_nonzero(dice == die) for die in set(dice)]) == 2),
     lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:4])]) or
                   all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[2:])])),
     lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:])]),
