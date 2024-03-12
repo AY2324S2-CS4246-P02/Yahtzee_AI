@@ -46,7 +46,7 @@ class Table_Rect(pygame.Rect):
         '''
         for idx, (r1, r2) in enumerate(zip(self.table_rects, self.value_rects)):
             if r1.collidepoint(location) or r2.collidepoint(location):
-                return idx + 1
+                return idx
             
         return None
 
@@ -137,6 +137,8 @@ def main():
                         selected_dice.append(a)
                     else:
                         selected_dice.remove(a)
+                elif (a := table_rect.get_clicked_row(location)) is not None:
+                    yahtzee.doAction(('KEEP', Agent.Yahtzee.CATEGORIES_NAMES[a]))
 
             elif event.type == pygame.KEYDOWN:
                 try:
@@ -153,8 +155,6 @@ def main():
         
         
         pygame.display.update() 
-
-
 
 
 if __name__ == '__main__':
