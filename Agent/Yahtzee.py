@@ -29,14 +29,14 @@ class Yahtzee:
         # Initial dice roll.
         self.round = 0
         self.rerolls = MAX_REROLLS
-        self.__roll_dice(np.arange(NUM_DICE))
+        self.roll_dice(np.arange(NUM_DICE))
 
     def reset(self):
         self.round = 0
         self.rerolls = MAX_REROLLS
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
-        self.__roll_dice(np.arange(NUM_DICE))
+        self.roll_dice(np.arange(NUM_DICE))
         
     # State: Tuple(dice: list, rerolls: int, available_categories: list)
     def getCurrentState(self):
@@ -51,7 +51,7 @@ class Yahtzee:
             rewards = self.getScore(action[1])
             self.write_score(action[1])
         else:
-            self.__roll_dice(np.arange(NUM_DICE))
+            self.roll_dice(np.arange(NUM_DICE))
         return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
 
     # Get the score for the chosen category
@@ -60,7 +60,7 @@ class Yahtzee:
         # print("Potential Scores:", potential_scores)
         return potential_scores[category_id]
     
-    def __roll_dice(self, indices):
+    def roll_dice(self, indices):
         """
         Takes in a list of integers of index ranging from 0 to number of dice.
         Rolls the dice of specified indices.
@@ -191,7 +191,7 @@ class Yahtzee:
             return self.calculate_score()
         else:
             # Rerolls the next round dice (not a choice).
-            self.__roll_dice(np.arange(NUM_DICE))
+            self.roll_dice(np.arange(NUM_DICE))
             return 0
 
 
