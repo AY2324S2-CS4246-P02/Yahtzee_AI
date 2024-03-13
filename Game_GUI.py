@@ -22,23 +22,27 @@ class Table_Rect(pygame.Rect):
         self.table_tl_y = self.centery - 300
         self.table_col1_width = 250
         self.table_col2_width = 150
-        table_cell_height = 600 // 14
-        for i in range(14):
-            r1 = pygame.Rect(self.table_tl_x, self.table_tl_y + i * table_cell_height, self.table_col1_width, table_cell_height)
-            r2 = pygame.Rect(self.table_tl_x + self.table_col1_width, self.table_tl_y + i * table_cell_height, self.table_col2_width, table_cell_height)
+        self.n_cells = 15
+        self.table_cell_height = 600 // self.n_cells
+        for i in range(self.n_cells):
+            r1 = pygame.Rect(self.table_tl_x, self.table_tl_y + i * self.table_cell_height, self.table_col1_width, self.table_cell_height)
+            r2 = pygame.Rect(self.table_tl_x + self.table_col1_width, self.table_tl_y + i * self.table_cell_height, self.table_col2_width, self.table_cell_height)
             self.table_rects.append(r1)
             self.value_rects.append(r2)
 
     def draw(self, screen):
-        for i in range(14):
+        names = Agent.Yahtzee.CATEGORIES_NAMES + ["Total"]
+        for i in range(self.n_cells):
             pygame.draw.rect(screen, (255,0,0), self.table_rects[i], width = 2)
             pygame.draw.rect(screen, (255,0,0), self.value_rects[i], width = 2)
 
-            draw_text(screen, Agent.Yahtzee.CATEGORIES_NAMES[i], self.table_rects[i], size = 36)
+            draw_text(screen, names[i], self.table_rects[i], size = 36)
 
     def draw_scoresheet(self, screen, sheet):
         for rect, val in zip(self.value_rects, sheet):
             draw_text(screen, str(val), rect, 36, 'white')
+        
+
 
     def get_clicked_row(self, location):
         '''
@@ -138,7 +142,8 @@ def main():
                     else:
                         selected_dice.remove(a)
                 elif (a := table_rect.get_clicked_row(location)) is not None:
-                    yahtzee.doAction(('KEEP', Agent.Yahtzee.CATEGORIES_NAMES[a]))
+                    print(Agent.Yahtzee.CATEGORIES_NAMES[a])
+                    yahtzee.doAction(('KEEP', a))
 
             elif event.type == pygame.KEYDOWN:
                 try:
@@ -151,7 +156,7 @@ def main():
 
 
         dice_rect.draw_dice_values(screen, yahtzee.get_dice())
-        table_rect.draw_scoresheet(screen, yahtzee.potential_score())
+        table_rect.draw_scoresheet(screen, yahtzee.get_display_scoresheet())
         
         
         pygame.display.update() 

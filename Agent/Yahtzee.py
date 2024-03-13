@@ -125,7 +125,27 @@ class Yahtzee:
                     score += CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
             potential_sheet[category] = score
         return potential_sheet
+    
+    def get_display_scoresheet(self):
+        ## If a category is available, displays "--- (POTENTIAL_SCORE)"
+        ## If a category is not available, displays ACTUAL_SCORE
+        sheet = []
+        for idx, (p, a) in enumerate(zip(self.potential_score(), self.scoresheet)):
+            if p == -1:
+                sheet.append(str(a))
+            else:
+                sheet.append(f"--- ({p})")
+        sheet.append(self.get_bonus())
+        sheet.append(self.calculate_score())
 
+        return sheet
+    
+    ## To be deprecated once bug in bonus score calculation is fixed
+    def get_bonus(self):
+        s = 0
+        for i in self.scoresheet[:6]:
+            s += (i if i != 255 else 0)
+        return 0 if s < 63 else 35
 
     def get_available_categories(self):
         """
@@ -226,7 +246,8 @@ class Yahtzee:
         """
         Calculates total score of the current score sheet.
         """
-        total_score = np.sum(self.scoresheet)
+        total_score = np.sum(self.scoresheet[:-1][self.scoresheet[:-1] != 255])
+        total_score += self.get_bonus()
         return total_score
 
 
@@ -295,9 +316,10 @@ CATEGORIES_CHECK = [
     lambda dice: max([np.count_nonzero(dice == die) for die in set(dice)]) >= 4,
     lambda dice: (max([np.count_nonzero(dice == die) for die in set(dice)]) == 3 and 
                   min([np.count_nonzero(dice == die) for die in set(dice)]) == 2),
-    lambda dice: (all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:4])]) or
-                  all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[2:])])),
-    lambda dice: all([sorted(dice)[i - 1] == die - 1 for i, die in enumerate(sorted(dice)[1:])]),
+    lambda dice: (len(set(dice).intersection({1, 2, 3, 4})) == 4 or 
+                  len(set(dice).intersection({2, 3, 4, 5})) == 4 or
+                  len(set(dice).intersection({3, 4, 5, 6})) == 4),
+    lambda dice: set(dice) in ({1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}),
     lambda dice: len(set(dice)) == 1,
     lambda dice: True,
     lambda dice: True
