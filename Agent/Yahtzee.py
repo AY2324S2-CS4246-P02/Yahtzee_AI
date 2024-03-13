@@ -43,7 +43,7 @@ class Yahtzee:
         return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories()))
     
     # Returns nextState and rewards
-    # Action: Tuple(Literal['REROLL', 'KEEP'], Union[List[bool], str])
+    # Action: Tuple(Literal['REROLL', 'KEEP'], Union[List[int], str])
     def doAction(self, action):
         rewards = 0
         # If action KEEP, calculate score as set it as reward
@@ -51,7 +51,7 @@ class Yahtzee:
             rewards = self.getScore(action[1])
             self.write_score(action[1])
         else:
-            self.roll_dice(np.arange(NUM_DICE))
+            self.roll_dice(action[1])
         return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
 
     # Get the score for the chosen category
@@ -142,10 +142,7 @@ class Yahtzee:
     
     ## To be deprecated once bug in bonus score calculation is fixed
     def get_bonus(self):
-        s = 0
-        for i in self.scoresheet[:6]:
-            s += (i if i != 255 else 0)
-        return 0 if s < 63 else 35
+        return self.scoresheet[CATEGORY_NAME2ID['Bonus']]
 
     def get_available_categories(self):
         """
