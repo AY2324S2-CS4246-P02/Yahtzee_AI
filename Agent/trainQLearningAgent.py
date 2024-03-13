@@ -3,6 +3,9 @@ from qlearningAgents import QLearningAgent
 from typing import List, Literal, Union, Tuple
 from itertools import product
 
+all_rewards = [0]
+all_scoreboards = []
+
 # State: Tuple(dice: list, rerolls: int, available_categories: list)
 def actionFn(state) -> Tuple[Literal['REROLL', 'KEEP'], Union[List[bool], int]]:
     legalActions = []
@@ -38,6 +41,9 @@ def runEpisode(agent: QLearningAgent, environment: Yahtzee, discount, episode, v
         # END IF IN A TERMINAL STATE
         actions = actionFn(state)
         if len(actions) == 0:
+            if returns > all_rewards[-1]:
+                all_scoreboards.append(environment.get_scoresheet())
+                all_rewards.append(returns)
             if verbose > 1:
                 print("EPISODE "+str(episode)+" COMPLETE: RETURN WAS "+str(returns)+"\n")
             return returns
@@ -60,7 +66,7 @@ def runEpisode(agent: QLearningAgent, environment: Yahtzee, discount, episode, v
 
         returns += reward * totalDiscount
         totalDiscount *= discount
-
+        
 from tqdm import tqdm
 def train_Yahtzee(episodes = 10, lr=0.5, eps=0.3, discount=1):
     qLearnOpts = {
@@ -86,16 +92,21 @@ def train_Yahtzee(episodes = 10, lr=0.5, eps=0.3, discount=1):
         print()
 
     # DISPLAY POST-LEARNING VALUES / Q-VALUES
+    import json
     if agent.get_agent_name() == 'Q-Learning Agent':
         print("Q-VALUES AFTER "+str(episodes)+" EPISODES")
-        sortedQValues = sorted(agent.qValues.items(), key=lambda x: x[1], reverse=True)[:10]
+        # sortedQValues = sorted(agent.qValues.items(), key=lambda x: x[1], reverse=True)[:10]
+        # for qValue in sortedQValues:
+        #   cats = [CATEGORIES_NAMES[int(x)] for x in qValue[0][0][2]]
+        #   print(f"State: Dice Values: {qValue[0][0][0]}, Rerolls: {qValue[0][0][1]}, Available Categories: {cats}, Action: {qValue[0][1][0]}, {CATEGORIES_NAMES[int(qValue[0][1][1])]} \nValue: {qValue[1]}")
         print(len(agent.qValues))
-        for qValue in sortedQValues:
-          cats = [CATEGORIES_NAMES[int(x)] for x in qValue[0][0][2]]
-          print(f"State: Dice Values: {qValue[0][0][0]}, Rerolls: {qValue[0][0][1]}, Available Categories: {cats}, Action: {qValue[0][1][0]}, {CATEGORIES_NAMES[int(qValue[0][1][1])]} \nValue: {qValue[1]}")
+        
+        with open("scores.txt", 'w') as f:
+            for id, reward in enumerate(all_rewards[1:]):
+                f.write(f"{reward}, {all_scoreboards[id]}\n")
         print("VALUES AFTER "+str(episodes)+" EPISODES")
 
 import time
 start_time = time.time()
-train_Yahtzee(100, lr=0.4)
+train_Yahtzee(100000, lr=0.5)
 print("Time Taken:", time.time() - start_time)

@@ -197,7 +197,8 @@ class Yahtzee:
         self.log[self.round, 1] = score
 
         # Check for Bonus category.
-        upper_score = np.sum(self.scoresheet[0:NUM_UPPER])
+        segment = self.scoresheet[0:NUM_UPPER]
+        upper_score = np.sum(segment[segment != EMPTY])
         if upper_score >= BONUS_THRESHOLD:
             self.scoresheet[NUM_CATEGORIES-1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
             self.log[NUM_CATEGORIES-1, 0] = CATEGORIES_NAMES[NUM_CATEGORIES-1]
