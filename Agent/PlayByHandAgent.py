@@ -19,7 +19,7 @@ class PlayByHandAgent(Agent):
             dice: List[int],
             rerolls: int,
             available_categories: List[str]
-        ) -> Tuple[Literal['REROLL', 'KEEP'], Union[List[bool], str]]:
+        ) -> Tuple[Literal['REROLL', 'KEEP'], Union[List[bool], int]]:
         combined_action = []
         
         print(f"Dice received: {dice}")

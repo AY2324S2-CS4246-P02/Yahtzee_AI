@@ -3,6 +3,8 @@ from typing import List, Literal, Union, Tuple
 from Yahtzee import CATEGORIES_NAMES
 import Yahtzee
 
+LOGGING = False
+
 class Agent(ABC):
 
     def __init__(self):
@@ -26,7 +28,7 @@ class Agent(ABC):
         dice: List[int],
         rerolls: int,
         available_categories: List[str]
-    ) -> Tuple[Literal['REROLL', 'KEEP'], Union[List[bool], str]]:
+    ) -> Tuple[Literal['REROLL', 'KEEP'], Union[List[bool], int]]:
         raise NotImplementedError
     
     def play_game(self):
@@ -39,7 +41,7 @@ class Agent(ABC):
                     Agent.__category_idx_to_str(self.game.get_available_categories())
                 )
 
-                self.move_history.append((round, action))
+                self.move_history.append((round, action, [die for die in self.game.get_dice()]))
 
                 if action[0] == 'REROLL':
                     self.game.roll_dice(action[1])
@@ -53,12 +55,17 @@ class Agent(ABC):
                     Agent.__category_idx_to_str(self.game.get_available_categories())
                 )
 
-                self.move_history.append((round, action))
+                self.move_history.append((round, action, [die for die in self.game.get_dice()]))
 
                 chosen_category = action[1]
 
             self.game.write_score(chosen_category)
 
-        print("\n".join(list(map(
-            lambda entry: f"Round {entry[0]}: {entry[1][0]} -> {entry[1][1]}"
-        ))))
+        if LOGGING:
+            print("\n".join(list(map(
+                lambda entry: f"Round {entry[0]}: {entry[2]} -> {entry[1][0]} -> {entry[1][1]}",
+                self.move_history
+            ))))
+            print(f"Total score = {self.game.calculate_score()}")
+            print(f"{self.game.scoresheet}")
+        return self.game.calculate_score()
