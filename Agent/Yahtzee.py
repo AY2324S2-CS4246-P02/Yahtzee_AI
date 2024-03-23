@@ -29,14 +29,14 @@ class Yahtzee:
         # Initial dice roll.
         self.round = 0
         self.rerolls = MAX_REROLLS
-        self.roll_dice(np.arange(NUM_DICE))
+        self.roll_dice(np.array([False, False, False, False, False]))
 
     def reset(self):
         self.round = 0
         self.rerolls = MAX_REROLLS
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
-        self.roll_dice(np.arange(NUM_DICE))
+        self.roll_dice(np.array([False, False, False, False, False]))
         
     # State: Tuple(dice: list, rerolls: int, available_categories: list)
     def getCurrentState(self):
@@ -73,8 +73,10 @@ class Yahtzee:
             raise Exception("Game is already over.")
         
         # Randomly choose numbers for dice roll.
-        for index in indices:
-            self.dice[index] = choice(DIE_CHOICES)
+        # TRUE MEANS TO KEEP; FALSE MEANS TO REROLL
+        for i, choose in enumerate(indices[:5]):
+            if not choose:
+                self.dice[i] = choice(DIE_CHOICES)
         
         # Logging result of dice roll.
         if self.log[self.round, 2] == None:
@@ -215,7 +217,7 @@ class Yahtzee:
             return self.calculate_score()
         else:
             # Rerolls the next round dice (not a choice).
-            self.roll_dice(np.arange(NUM_DICE))
+            self.roll_dice(np.array([False, False, False, False, False]))
             return 0
 
 
