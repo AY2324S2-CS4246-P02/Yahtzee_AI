@@ -51,7 +51,7 @@ class Yahtzee:
             rewards = self.getScore(action[1])
             self.write_score(action[1])
         else:
-            self.roll_dice(np.arange(NUM_DICE))
+            self.roll_dice(action[1])
         return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
 
     # Get the score for the chosen category
@@ -158,7 +158,10 @@ class Yahtzee:
         return available_categories
 
 
-    def write_score(self, category, dice=None):
+    def write_score(
+            self,
+            category: int,
+            dice: np.ndarray = None):
         """
         Writes into the score sheet at the category with the current dice roll or specified dice.
         Automatically writes in and logs Bonus category if conditions satisfied.
@@ -179,7 +182,7 @@ class Yahtzee:
         if self.round >= NUM_CATEGORIES - 1:
             raise Exception("Game is already over.")
         
-        if dice == None:
+        if type(dice) != np.ndarray:
             dice = self.dice
         else:
             self.log[self.round, 2].append(dice)
@@ -187,9 +190,9 @@ class Yahtzee:
         # Calculate score.
         score = 0  # 0 if not applicable
         check = CATEGORIES_CHECK[category]
-        if check(self.dice):
+        if check(dice):
             scoring = CATEGORIES_SCORING[category]
-            score = scoring(self.dice)
+            score = scoring(dice)
         
         # Write in the score.
         self.scoresheet[category] = score
@@ -199,7 +202,7 @@ class Yahtzee:
         # Check for Bonus category.
         segment = self.scoresheet[0:NUM_UPPER]
         upper_score = np.sum(segment[segment != EMPTY])
-        if upper_score >= BONUS_THRESHOLD:
+        if upper_score >= BONUS_THRESHOLD and self.log[NUM_CATEGORIES-1, 2] == None:
             self.scoresheet[NUM_CATEGORIES-1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
             self.log[NUM_CATEGORIES-1, 0] = CATEGORIES_NAMES[NUM_CATEGORIES-1]
             self.log[NUM_CATEGORIES-1, 1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
@@ -230,7 +233,7 @@ class Yahtzee:
         prev_write = CATEGORIES_NAMES.index(self.log[prev_round, 0])
         prev_rolls = self.log[prev_round, 2]
         initial_roll = prev_rolls[0]
-        bonus_round = self.log[NUM_CATEGORIES, 2]
+        bonus_round = self.log[NUM_CATEGORIES - 1, 2]
 
         # Undo round.
         self.round -= 1
@@ -239,16 +242,16 @@ class Yahtzee:
         self.scoresheet[prev_write] = EMPTY
         self.log[prev_round] = [None, None, None]
         if bonus_round == prev_round:  # if bonus was also achieved previous round
-            self.scoresheet[NUM_CATEGORIES] = 0
-            self.log[NUM_CATEGORIES] = [None, None, None]
+            self.scoresheet[NUM_CATEGORIES - 1] = 0
+            self.log[NUM_CATEGORIES - 1] = [None, None, None]
 
 
     def calculate_score(self):
         """
         Calculates total score of the current score sheet.
         """
-        total_score = np.sum(self.scoresheet[:-1][self.scoresheet[:-1] != 255])
-        total_score += self.get_bonus()
+        total_score = np.sum(self.scoresheet[self.scoresheet[:] != 255])
+        #total_score += self.get_bonus()
         return total_score
 
 
