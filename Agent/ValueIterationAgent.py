@@ -1,17 +1,18 @@
 from Agent import Agent
 from Yahtzee import Yahtzee
+import Yahtzee
 import itertools
 from pprint import pprint
 import random
 
 
-# class PolicyIterationAgent(Agent):
+# class ValueIterationAgent(Agent):
 #     def __init__(self, yahtzee : Yahtzee, *args, **kwargs):
 #         super().__init__(*args, **kwargs)
 #         self.yahtzee = yahtzee
 
 #     def get_agent_name(self):
-#         return "Policy Iteration Agent"
+#         return "Value Iteration Agent"
     
 ## Reduced_state should be a tuple of (score_table (2^13 values) , unordered_dice_rolls (252 values), n_rerolls_left)
 ## Total of 6.2M reduced states
@@ -128,10 +129,82 @@ def get_transition_probabilities(state, action):
     
     return next_state_dict
 
-RUN_TEST = True
-if (RUN_TEST == True):
-    example_state = ((1, 3, 3, 5, 5), (0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1), 2)
-    
-    example_action = (1, (0, ))
 
-    pprint(get_transition_probabilities(example_state, example_action))
+def get_reward(state, action):
+    ## Takes in a state and an action
+    ## Returns an int, representing the reward of taking that action at that state
+    dice_values, score_table, n_rerolls_left = state
+    is_keep, info = action
+
+    if not is_keep:
+        return 0
+    else:
+        index_to_assign ,= info
+        assert score_table[index_to_assign] == 0
+
+        match index_to_assign:
+            case 0: ##Ones
+                return dice_values.count(1)
+            case 1: ## Twos
+                return 2 * dice_values.count(2)
+            case 2: ## Threes
+                return 3 * dice_values.count(3)
+            case 3: ## Fours 
+                return 4 * dice_values.count(4)
+            case 4: ## Fives
+                return 5 * dice_values.count(5)
+            case 5: ## Sixes
+                return 6 * dice_values.count(6)
+            case 6: ##Three of a kind
+                for v in dice_values:
+                    if dice_values.count(v) >= 3:
+                        return sum(dice_values)
+                return 0
+            case 7: ##Four of a kind
+                for v in dice_values:
+                    if dice_values.count(v) >= 3:
+                        return sum(dice_values)
+                return 0
+            case 8: ##Full house
+                twos_satisfied = False
+                threes_satisfied = False
+                for roll in set(dice_values):
+                    if dice_values.count(roll) == 2:
+                        twos_satisfied = True
+                    elif dice_values.count(roll) == 3:
+                        threes_satisfied = True
+                if twos_satisfied and threes_satisfied:
+                    return 25
+                return 0
+            case 9: ## Small straight
+                if (len(set(dice_values).intersection({1, 2, 3, 4})) == 4 or 
+                  len(set(dice_values).intersection({2, 3, 4, 5})) == 4 or
+                  len(set(dice_values).intersection({3, 4, 5, 6})) == 4):
+                    return 30
+                else:
+                    return 0
+            case 10: ##Large straight
+                if set(dice_values) in ({1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}):
+                    return 40
+                else:
+                    return 0
+            case 11: ## Yahtzee
+                if len(set(dice_values)) == 1:
+                    return 50
+                else:
+                    return 0
+            case 12: 
+                return sum(dice_values)
+            case _:
+                raise Exception("No possible reward!")
+            
+             
+
+
+RUN_TEST = False
+if (RUN_TEST == True):
+    example_state = ((2, 2, 3, 4, 5), (0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 2)
+    
+    example_action = (1, (10, ))
+
+    pprint(get_reward(example_state, example_action))
