@@ -4,15 +4,52 @@ import Yahtzee
 import itertools
 from pprint import pprint
 import random
+from functools import cache
+import json
 
 
-# class ValueIterationAgent(Agent):
-#     def __init__(self, yahtzee : Yahtzee, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.yahtzee = yahtzee
+class ValueIterationAgent(Agent):    
+    def __init__(self, yahtzee : Yahtzee, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.yahtzee = yahtzee
 
-#     def get_agent_name(self):
-#         return "Value Iteration Agent"
+    def get_agent_name(self):
+        return "Value Iteration Agent"
+    
+    def run_value_iteration(self, max_allowable_error, save_to_file = False):
+        self.value_table = {
+            state : 0 for state in generate_state_space()
+        }
+        self.max_allowable_error = max_allowable_error
+
+        delta = self.max_allowable_error + 1
+        while delta > self.max_allowable_error:
+            # print("Next iteration")
+            for s in self.value_table.keys():
+                # print(f"State = {s}")
+                curr_state_value = self.value_table[s]
+                
+                actions = generate_actions(s)
+                q_values = []
+                for action in actions:
+                    action_q_value = sum((prob * (get_reward(s, action) + self.value_table[next_state]) for next_state, prob in get_transition_probabilities(s, action).items()))
+                    q_values.append(action_q_value)
+                
+                new_state_value = max(q_values) if q_values != [] else 0
+                self.value_table[s] = new_state_value
+                delta = max(delta, abs(curr_state_value - new_state_value))
+
+        print("Value iteration done")
+        
+        if save_to_file:
+            with open('value_table.json', 'w') as output:
+                pprint(self.value_table, sort_dicts= False, stream=output)
+    
+    def get_action(self, *args):
+        pass
+        
+
+
     
 ## Reduced_state should be a tuple of (score_table (2^13 values) , unordered_dice_rolls (252 values), n_rerolls_left)
 ## Total of 6.2M reduced states
@@ -74,6 +111,7 @@ def get_reroll_probabilities(dice_combination, dice_to_reroll):
     return transition_counts
 # pprint(get_reroll_probabilities((1, 2, 2, 2, 2), (1, 2, 2, 2)), sort_dicts = False)
 
+@cache
 def get_reroll_all_dice_probabilities():
     return get_reroll_probabilities((1,1,1,1,1), (1,1,1,1,1))
 
@@ -86,7 +124,9 @@ def generate_actions(state):
     
     dice_values, score_table, n_rerolls_left = state
 
-    actions = []
+    if set(score_table) == {1}:
+        return
+
     if n_rerolls_left > 0:
         possible_rerolls = generate_rerolls(dice_values)
 
@@ -198,13 +238,11 @@ def get_reward(state, action):
             case _:
                 raise Exception("No possible reward!")
             
-             
 
 
-RUN_TEST = False
+
+RUN_TEST = True
 if (RUN_TEST == True):
-    example_state = ((2, 2, 3, 4, 5), (0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 2)
-    
-    example_action = (1, (10, ))
+    agent = ValueIterationAgent(Yahtzee.Yahtzee())
+    agent.run_value_iteration(1, save_to_file=True)
 
-    pprint(get_reward(example_state, example_action))
