@@ -66,7 +66,7 @@ class Yahtzee:
         """
         if self.rerolls == 0:
             raise Exception("You have no rerolls left.")
-        if  self.round >= NUM_CATEGORIES - 1:
+        if  self.round >= NUM_CATEGORIES:
             raise Exception("Game is already over.")
         
         # Randomly choose numbers for dice roll.
@@ -106,8 +106,8 @@ class Yahtzee:
         By definition, upper section categories' scores also include bonus point if satisfied.
         If the category is already filled, it is set to -1.
         """
-        potential_sheet = np.full((NUM_CATEGORIES - 1), -1, int)
-        for category in range(NUM_CATEGORIES - 1):
+        potential_sheet = np.full((NUM_CATEGORIES), -1, int)
+        for category in range(NUM_CATEGORIES):
             if self.scoresheet[category] != EMPTY:
                 continue
             score = 0
@@ -138,8 +138,6 @@ class Yahtzee:
         Returns empty list if all categories are written and game is over.
         """
         available_categories = np.nonzero(self.scoresheet == EMPTY)[0].tolist()
-        if NUM_CATEGORIES-1 in available_categories:
-            available_categories.remove(NUM_CATEGORIES-1)
         return available_categories
 
 
@@ -164,7 +162,7 @@ class Yahtzee:
             raise Exception("You cannot write in Bonus category.")
         if self.scoresheet[category] != EMPTY:
             raise Exception("Category already written.")
-        if self.round >= NUM_CATEGORIES - 1:
+        if self.round >= NUM_CATEGORIES:
             raise Exception("Game is already over.")
         
         if type(dice) != np.ndarray:
@@ -187,7 +185,7 @@ class Yahtzee:
         # Set up for next round.
         self.round += 1
         self.rerolls = MAX_REROLLS
-        if self.round >= NUM_CATEGORIES - 1:
+        if self.round >= NUM_CATEGORIES:
             return self.calculate_score()
         else:
             # Rerolls the next round dice (not a choice).

@@ -7,8 +7,12 @@ LOGGING = False
 
 class Agent(ABC):
 
-    def __init__(self):
-        self.game = Yahtzee.Yahtzee()
+    def __init__(
+            self,
+            game,
+            rounds):
+        self.game = game
+        self.rounds = rounds
         self.move_history = []
 
     def __category_idx_to_str(
@@ -32,7 +36,7 @@ class Agent(ABC):
         raise NotImplementedError
     
     def play_game(self):
-        for round in range(13):
+        for round in range(self.rounds):
             chosen_category = None
             while self.game.get_rerolls() > 0:
                 action = self.get_action(
