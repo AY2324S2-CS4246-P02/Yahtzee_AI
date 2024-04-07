@@ -1,6 +1,7 @@
 import numpy as np
 from random import choice
 from typing import List
+from copy import deepcopy
 
 DIE_CHOICES = [i for i in range(1, 7)]
 
@@ -66,20 +67,20 @@ class Yahtzee:
         """
         if self.rerolls == 0:
             raise Exception("You have no rerolls left.")
-        if  self.round >= NUM_CATEGORIES - 1:
+        if  self.round >= NUM_CATEGORIES:
             raise Exception("Game is already over.")
-        
+        # print("Current Dice: ", self.dice)
         # Randomly choose numbers for dice roll.
         # TRUE MEANS TO KEEP; FALSE MEANS TO REROLL
         for i, choose in enumerate(indices[:5]):
             if not choose:
                 self.dice[i] = choice(DIE_CHOICES)
-        
+        # print("New Dice: ", self.dice)
         # Logging result of dice roll.
         if self.log[self.round, 2] == None:
-            self.log[self.round, 2] = [self.dice]
+            self.log[self.round, 2] = deepcopy([self.dice])
         else:
-            self.log[self.round, 2].append(self.dice)
+            self.log[self.round, 2].append(deepcopy(self.dice))
         
         self.rerolls -= 1
 
@@ -164,7 +165,7 @@ class Yahtzee:
             raise Exception("You cannot write in Bonus category.")
         if self.scoresheet[category] != EMPTY:
             raise Exception("Category already written.")
-        if self.round >= NUM_CATEGORIES - 1:
+        if self.round >= NUM_CATEGORIES:
             raise Exception("Game is already over.")
         
         if type(dice) != np.ndarray:
@@ -187,7 +188,7 @@ class Yahtzee:
         # Set up for next round.
         self.round += 1
         self.rerolls = MAX_REROLLS
-        if self.round >= NUM_CATEGORIES - 1:
+        if self.round >= NUM_CATEGORIES:
             return self.calculate_score()
         else:
             # Rerolls the next round dice (not a choice).

@@ -63,11 +63,11 @@ class PolicyIterationAgent():
             # However, the indices are for sorted dice. Find proper indices.
             curr_dice = self.game.get_dice()
             sorted_index = np.argsort(curr_dice)
-            indices = []
+            indices = [True, True, True, True, True]
             for i in range(len(chosen_indices)):
                 if chosen_indices[i] == 1:
-                    indices.append(sorted_index[i])
-            return 'REROLL', indices
+                    indices[sorted_index[i]] = False
+            return 'REROLL', tuple(indices)
         else:  # if writing to category
             category = action_id - 31
             return 'WRITE', category
@@ -84,6 +84,7 @@ class PolicyIterationAgent():
         dice_id = self.combination_to_id[tuple(dice_combination)]
 
         id = rerolls_left * 32256 + category_id * 252 + dice_id
+        # print(rerolls_left, category_id, dice_id)
         return id
 
     def play_game(self):
@@ -93,6 +94,7 @@ class PolicyIterationAgent():
             action = self.get_action(curr_state)
 
             if action[0] == 'REROLL':
+                # print(action[1])
                 self.game.roll_dice(action[1])
             else:
                 chosen_category = action[1]
@@ -102,10 +104,10 @@ class PolicyIterationAgent():
             if len(categories_left) == 0:  # no more categories to write
                 terminal_state = True
         
-        print("Game Ended!")
-        print("Score: ", self.game.calculate_score())
-        print("Log:")
-        print(self.game.log)
+        # print("Game Ended!")
+        # print("Score: ", self.game.calculate_score())
+        # print("Log:")
+        # print(self.game.log)
     
     def reset_game(self):
         self.game = Yahtzee_7.Yahtzee()
@@ -113,4 +115,14 @@ class PolicyIterationAgent():
 
 if __name__ == "__main__":
     agent = PolicyIterationAgent()
+    scores = []
+    for i in range(100):
+        agent.play_game()
+        score = agent.game.calculate_score()
+        scores.append(score)
+        agent.reset_game()
+    print("Max: ", np.max(scores))
+    print("Mean: ", np.mean(scores))
     agent.play_game()
+    print("Example log:")
+    print(agent.game.log)
