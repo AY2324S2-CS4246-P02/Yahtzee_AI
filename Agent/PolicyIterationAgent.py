@@ -116,7 +116,7 @@ class PolicyIterationAgent():
 if __name__ == "__main__":
     agent = PolicyIterationAgent()
     scores = []
-    for i in range(100):
+    for i in range(1000):
         agent.play_game()
         score = agent.game.calculate_score()
         scores.append(score)
