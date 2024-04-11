@@ -50,7 +50,9 @@ class Yahtzee:
             self.write_score(action[1])
         else:
             self.roll_dice(action[1])
-        return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
+        
+        done = len(self.get_available_categories()) == 0
+        return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards, done
 
     # Get the score for the chosen category
     def getScore(self, category_id):
@@ -101,21 +103,23 @@ class Yahtzee:
         return self.scoresheet
 
 
-    def potential_score(self):
+    def potential_score(self, dice=None):
         """
         Returns a scoresheet of potential score added if a category chosen is to be written with current dice.
         By definition, upper section categories' scores also include bonus point if satisfied.
         If the category is already filled, it is set to -1.
         """
-        potential_sheet = np.full((NUM_CATEGORIES - 1), -1, int)
-        for category in range(NUM_CATEGORIES - 1):
+        if dice is None:
+            dice = self.dice
+        potential_sheet = np.full((NUM_CATEGORIES), -1, int)
+        for category in range(NUM_CATEGORIES):
             if self.scoresheet[category] != EMPTY:
                 continue
             score = 0
             check = CATEGORIES_CHECK[category]
-            if check(self.dice):
+            if check(dice):
                 scoring = CATEGORIES_SCORING[category]
-                score = scoring(self.dice)
+                score = scoring(dice)
             potential_sheet[category] = score
         return potential_sheet
     
@@ -139,8 +143,8 @@ class Yahtzee:
         Returns empty list if all categories are written and game is over.
         """
         available_categories = np.nonzero(self.scoresheet == EMPTY)[0].tolist()
-        if NUM_CATEGORIES-1 in available_categories:
-            available_categories.remove(NUM_CATEGORIES-1)
+        if NUM_CATEGORIES in available_categories:
+            available_categories.remove(NUM_CATEGORIES)
         return available_categories
 
 

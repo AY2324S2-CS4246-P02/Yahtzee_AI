@@ -52,7 +52,7 @@ class Yahtzee:
             self.write_score(action[1])
         else:
             self.roll_dice(action[1])
-        return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories())), rewards
+        return (tuple(sorted(self.dice.tolist())), self.rerolls, tuple(self.get_available_categories())), rewards
 
     # Get the score for the chosen category
     def getScore(self, category_id):
@@ -103,28 +103,30 @@ class Yahtzee:
         return self.scoresheet
 
 
-    def potential_score(self):
+    def potential_score(self, dice=None):
         """
         Returns a scoresheet of potential score added if a category chosen is to be written with current dice.
         By definition, upper section categories' scores also include bonus point if satisfied.
         If the category is already filled, it is set to -1.
         """
+        if dice is None:
+            dice = self.dice
         potential_sheet = np.full((NUM_CATEGORIES - 1), -1, int)
         for category in range(NUM_CATEGORIES - 1):
             if self.scoresheet[category] != EMPTY:
                 continue
             score = 0
             check = CATEGORIES_CHECK[category]
-            if check(self.dice):
+            if check(dice):
                 scoring = CATEGORIES_SCORING[category]
-                score = scoring(self.dice)
+                score = scoring(dice)
             # Bonus check for upper section.
             if category < NUM_UPPER:
                 segment = self.scoresheet[0:NUM_UPPER]
                 bonus_check = np.sum(segment[segment != EMPTY]) + score
                 # print("Bonus Check:", bonus_check)
                 if bonus_check >= BONUS_THRESHOLD:
-                    score += CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
+                    score += CATEGORIES_SCORING[NUM_CATEGORIES-1](dice)
             potential_sheet[category] = score
         return potential_sheet
     
