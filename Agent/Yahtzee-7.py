@@ -5,10 +5,8 @@ from typing import List
 DIE_CHOICES = [i for i in range(1, 7)]
 
 NUM_DICE = 5
-NUM_CATEGORIES = 14
-NUM_UPPER = 6  # number of upper categories
+NUM_CATEGORIES = 7
 MAX_REROLLS = 3  # includes initial roll
-BONUS_THRESHOLD = 63
 EMPTY = np.iinfo(np.uint8).max  # = 255
 
 class Yahtzee:
@@ -17,7 +15,6 @@ class Yahtzee:
         # Stage setup.
         self.dice = np.zeros(NUM_DICE, dtype=np.uint8)
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
-        self.scoresheet[CATEGORY_NAME2ID['Bonus']] = 0  # Bonus category should be initialized to 0 not EMPTY
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
         # Log is (NUM_CATEGORIES x 3) array where:
         #       First column: Category chosen
@@ -43,7 +40,7 @@ class Yahtzee:
         return (tuple(self.dice.tolist()), self.rerolls, tuple(self.get_available_categories()))
     
     # Returns nextState and rewards
-    # Action: Tuple(Literal['REROLL', 'KEEP'], Union[List[int], str])
+    # Action: Tuple(Literal['REROLL', 'KEEP'], Union[List[bool], str])
     def doAction(self, action):
         rewards = 0
         # If action KEEP, calculate score as set it as reward
@@ -118,13 +115,6 @@ class Yahtzee:
             if check(self.dice):
                 scoring = CATEGORIES_SCORING[category]
                 score = scoring(self.dice)
-            # Bonus check for upper section.
-            if category < NUM_UPPER:
-                segment = self.scoresheet[0:NUM_UPPER]
-                bonus_check = np.sum(segment[segment != EMPTY]) + score
-                # print("Bonus Check:", bonus_check)
-                if bonus_check >= BONUS_THRESHOLD:
-                    score += CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
             potential_sheet[category] = score
         return potential_sheet
     
@@ -141,10 +131,6 @@ class Yahtzee:
         sheet.append(self.calculate_score())
 
         return sheet
-    
-    ## To be deprecated once bug in bonus score calculation is fixed
-    def get_bonus(self):
-        return self.scoresheet[CATEGORY_NAME2ID['Bonus']]
 
     def get_available_categories(self):
         """
@@ -198,15 +184,6 @@ class Yahtzee:
         self.log[self.round, 0] = CATEGORIES_NAMES[category]
         self.log[self.round, 1] = score
 
-        # Check for Bonus category.
-        segment = self.scoresheet[0:NUM_UPPER]
-        upper_score = np.sum(segment[segment != EMPTY])
-        if upper_score >= BONUS_THRESHOLD and self.log[NUM_CATEGORIES-1, 2] == None:
-            self.scoresheet[NUM_CATEGORIES-1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
-            self.log[NUM_CATEGORIES-1, 0] = CATEGORIES_NAMES[NUM_CATEGORIES-1]
-            self.log[NUM_CATEGORIES-1, 1] = CATEGORIES_SCORING[NUM_CATEGORIES-1](self.dice)
-            self.log[NUM_CATEGORIES-1, 2] = self.round
-
         # Set up for next round.
         self.round += 1
         self.rerolls = MAX_REROLLS
@@ -232,7 +209,6 @@ class Yahtzee:
         prev_write = CATEGORIES_NAMES.index(self.log[prev_round, 0])
         prev_rolls = self.log[prev_round, 2]
         initial_roll = prev_rolls[0]
-        bonus_round = self.log[NUM_CATEGORIES - 1, 2]
 
         # Undo round.
         self.round -= 1
@@ -240,9 +216,6 @@ class Yahtzee:
         self.dice = initial_roll
         self.scoresheet[prev_write] = EMPTY
         self.log[prev_round] = [None, None, None]
-        if bonus_round == prev_round:  # if bonus was also achieved previous round
-            self.scoresheet[NUM_CATEGORIES - 1] = 0
-            self.log[NUM_CATEGORIES - 1] = [None, None, None]
 
 
     def calculate_score(self):
@@ -257,64 +230,37 @@ class Yahtzee:
 # Category names.
 # Note that Bonus category is always the last.
 CATEGORIES_NAMES = [
-    'Ones',
-    'Twos',
-    'Threes',
-    'Fours',
-    'Fives',
-    'Sixes',
     'Three-of-a-Kind',
     'Four-of-a-Kind',
     'Full House',
     'Small Straight',
     'Large Straight',
     'Yahtzee',
-    'Chance',
-    'Bonus',
+    'Chance'
 ]
 
 CATEGORY_NAME2ID = {
-    'Ones': 0,
-    'Twos': 1,
-    'Threes': 2,
-    'Fours': 3,
-    'Fives': 4,
-    'Sixes': 5,
-    'Three-of-a-Kind': 6,
-    'Four-of-a-Kind': 7,
-    'Full House': 8,
-    'Small Straight': 9,
-    'Large Straight': 10,
-    'Yahtzee': 11,
-    'Chance': 12,
-    'Bonus': 13,
+    'Three-of-a-Kind': 0,
+    'Four-of-a-Kind': 1,
+    'Full House': 2,
+    'Small Straight': 3,
+    'Large Straight': 4,
+    'Yahtzee': 5,
+    'Chance': 6
 }
 
 CATEGORIES_SCORING = [
-    lambda dice: np.count_nonzero(dice == 1),
-    lambda dice: np.count_nonzero(dice == 2) * 2,
-    lambda dice: np.count_nonzero(dice == 3) * 3,
-    lambda dice: np.count_nonzero(dice == 4) * 4,
-    lambda dice: np.count_nonzero(dice == 5) * 5,
-    lambda dice: np.count_nonzero(dice == 6) * 6,
     lambda dice: sum(dice),
     lambda dice: sum(dice),
     lambda dice: 25,
     lambda dice: 30,
     lambda dice: 40,
     lambda dice: 50,
-    lambda dice: sum(dice),
-    lambda dice: 35
+    lambda dice: sum(dice)
 ]
 
 
 CATEGORIES_CHECK = [
-    lambda dice: True,
-    lambda dice: True,
-    lambda dice: True,
-    lambda dice: True,
-    lambda dice: True,
-    lambda dice: True,
     lambda dice: max([np.count_nonzero(dice == die) for die in set(dice)]) >= 3,
     lambda dice: max([np.count_nonzero(dice == die) for die in set(dice)]) >= 4,
     lambda dice: (max([np.count_nonzero(dice == die) for die in set(dice)]) == 3 and 
@@ -324,7 +270,6 @@ CATEGORIES_CHECK = [
                   len(set(dice).intersection({3, 4, 5, 6})) == 4),
     lambda dice: set(dice) in ({1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}),
     lambda dice: len(set(dice)) == 1,
-    lambda dice: True,
     lambda dice: True
 ]
 

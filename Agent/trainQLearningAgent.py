@@ -69,6 +69,7 @@ def runEpisode(agent: QLearningAgent, environment: Yahtzee, discount, episode, v
         
 from tqdm import tqdm
 def train_Yahtzee(episodes = 10, lr=0.5, eps=0.3, discount=1):
+    print(f"Starting to train with lr={lr} eps={eps}")
     qLearnOpts = {
       'actionFn': actionFn,
       'gamma': discount,
@@ -83,8 +84,11 @@ def train_Yahtzee(episodes = 10, lr=0.5, eps=0.3, discount=1):
         print("RUNNING", episodes, "EPISODES")
         print()
     returns = 0
+    all_returns = []
     for episode in tqdm(range(1, episodes+1), desc="Training", unit="Episode"):
-        returns += runEpisode(agent, env, discount, episode)
+        _return = runEpisode(agent, env, discount, episode)
+        returns += _return
+        all_returns.append(_return)
     if episodes > 0:
         print()
         print("AVERAGE RETURNS FROM START STATE: "+str((returns+0.0) / episodes))
@@ -104,9 +108,18 @@ def train_Yahtzee(episodes = 10, lr=0.5, eps=0.3, discount=1):
         with open("scores.txt", 'w') as f:
             for id, reward in enumerate(all_rewards[1:]):
                 f.write(f"{reward}, {all_scoreboards[id]}\n")
+        with open(f"lr={lr}_eps={eps}_returns.txt", 'w') as f:
+            for id, reward in enumerate(all_returns):
+                f.write(f"{reward} \n")
         print("VALUES AFTER "+str(episodes)+" EPISODES")
 
 import time
 start_time = time.time()
-train_Yahtzee(100000, lr=0.5)
+
+# Grid search
+lrs = [x/10 for x in range(1,11)]
+eps = [x/10 for x in range(1,6)]
+for lr in lrs:
+    for ep in eps:
+        train_Yahtzee(1000, lr=lr, eps=ep)
 print("Time Taken:", time.time() - start_time)
