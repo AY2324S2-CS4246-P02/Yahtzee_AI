@@ -5,7 +5,8 @@ import itertools
 from pprint import pprint
 import random
 from functools import cache
-import json
+import time
+import numpy as np
 
 
 class ValueIterationAgent(Agent):    
@@ -17,42 +18,71 @@ class ValueIterationAgent(Agent):
         return "Value Iteration Agent"
     
     def run_value_iteration(self, max_allowable_error, save_to_file = False):
-        self.value_table = {
-            state : 0 for state in generate_state_space()
-        }
-        self.max_allowable_error = max_allowable_error
+        start_time = time.perf_counter()
+        n_iters = 0
+        try:
+            self.value_table = {
+                state : 0 for state in generate_state_space()
+            }
+            self.max_allowable_error = max_allowable_error
 
-        delta = self.max_allowable_error + 1
-        while delta > self.max_allowable_error:
-            # print("Next iteration")
-            for s in self.value_table.keys():
-                # print(f"State = {s}")
-                curr_state_value = self.value_table[s]
-                
-                actions = generate_actions(s)
-                q_values = []
-                for action in actions:
-                    action_q_value = sum((prob * (get_reward(s, action) + self.value_table[next_state]) for next_state, prob in get_transition_probabilities(s, action).items()))
-                    q_values.append(action_q_value)
-                
-                new_state_value = max(q_values) if q_values != [] else 0
-                self.value_table[s] = new_state_value
-                delta = max(delta, abs(curr_state_value - new_state_value))
+            delta = self.max_allowable_error + 1
+            itr = 1
+            while delta > self.max_allowable_error:
+                print(f"Iteration {itr}")
+                itr += 1
+                for s in self.value_table.keys():
+                    # print(f"State = {s}")
+                    n_iters += 1
+                    curr_state_value = self.value_table[s]
+                    
+                    actions = generate_actions(s)
+                    q_values = []
+                    for action in actions:
+                        action_q_value = sum((prob * (get_reward(s, action) + self.value_table[next_state]) for next_state, prob in get_transition_probabilities(s, action).items()))
+                        q_values.append(action_q_value)
+                    
+                    new_state_value = max(q_values) if q_values != [] else 0
+                    self.value_table[s] = new_state_value
+                    delta = max(delta, abs(curr_state_value - new_state_value))
+                print(f"{delta = }")
+                print("----------------------")
+        except KeyboardInterrupt:
+            print(f"States processed =  {n_iters}")
+        except BaseException:
+            print("Exception thrown")
+        finally:
+            end_time = time.perf_counter()
+            print(f"Time taken = {end_time - start_time}")
 
-        print("Value iteration done")
-        
-        if save_to_file:
-            with open('value_table.json', 'w') as output:
-                pprint(self.value_table, sort_dicts= False, stream=output)
+            print("Value iteration done")
+            
+            if save_to_file:
+                with open('value_table.txt', 'w') as output:
+                    pprint(self.value_table, sort_dicts= False, stream=output)
     
     def get_action(self, *args):
-        pass
+        raise NotImplemented
+
+    def get_action_from_state(self, state):
+        try:
+            from value_table import utilities
+        except ImportError:
+            print("Utilities not defined. Run value iteration first.")
+            raise ImportError
+
+        best_q_value = -1
+        best_action = None
+        for action in generate_actions(state):
+            action_q_value = sum((prob * (get_reward(state, action) + utilities[next_state]) for next_state, prob in get_transition_probabilities(state, action).items()))
+            if action_q_value > best_q_value:
+                best_q_value = action_q_value
+                best_action = action
         
+        return best_action
+                
 
-
-    
 ## Reduced_state should be a tuple of (score_table (2^13 values) , unordered_dice_rolls (252 values), n_rerolls_left)
-## Total of 6.2M reduced states
 
 def generate_state_space():
     dice_values = list(itertools.combinations_with_replacement((1,2,3,4,5,6), 5))
@@ -61,7 +91,7 @@ def generate_state_space():
 
     # print(len(dice_values))
 
-    table_states = list(itertools.product((0,1), repeat = 13))
+    table_states = list(itertools.product((0,1), repeat = 7))
     # print(table_states)
     # print(len(table_states))
 
@@ -183,29 +213,17 @@ def get_reward(state, action):
         assert score_table[index_to_assign] == 0
 
         match index_to_assign:
-            case 0: ##Ones
-                return dice_values.count(1)
-            case 1: ## Twos
-                return 2 * dice_values.count(2)
-            case 2: ## Threes
-                return 3 * dice_values.count(3)
-            case 3: ## Fours 
-                return 4 * dice_values.count(4)
-            case 4: ## Fives
-                return 5 * dice_values.count(5)
-            case 5: ## Sixes
-                return 6 * dice_values.count(6)
-            case 6: ##Three of a kind
+            case 0: ##Three of a kind
                 for v in dice_values:
                     if dice_values.count(v) >= 3:
                         return sum(dice_values)
                 return 0
-            case 7: ##Four of a kind
+            case 1: ##Four of a kind
                 for v in dice_values:
                     if dice_values.count(v) >= 3:
                         return sum(dice_values)
                 return 0
-            case 8: ##Full house
+            case 2: ##Full house
                 twos_satisfied = False
                 threes_satisfied = False
                 for roll in set(dice_values):
@@ -216,33 +234,66 @@ def get_reward(state, action):
                 if twos_satisfied and threes_satisfied:
                     return 25
                 return 0
-            case 9: ## Small straight
+            case 3: ## Small straight
                 if (len(set(dice_values).intersection({1, 2, 3, 4})) == 4 or 
                   len(set(dice_values).intersection({2, 3, 4, 5})) == 4 or
                   len(set(dice_values).intersection({3, 4, 5, 6})) == 4):
                     return 30
                 else:
                     return 0
-            case 10: ##Large straight
+            case 4: ##Large straight
                 if set(dice_values) in ({1, 2, 3, 4, 5}, {2, 3, 4, 5, 6}):
                     return 40
                 else:
                     return 0
-            case 11: ## Yahtzee
+            case 5: ## Yahtzee
                 if len(set(dice_values)) == 1:
                     return 50
                 else:
                     return 0
-            case 12: 
+            case 6: 
                 return sum(dice_values)
             case _:
                 raise Exception("No possible reward!")
-            
+
+def perform_action(state, action):
+    transition_probabilities = get_transition_probabilities(state, action)
+    return random.choices(list(transition_probabilities.keys()), weights=list(transition_probabilities.values()))
 
 
+
+## Seed: "CS4246", total_reward = 165
 
 RUN_TEST = True
 if (RUN_TEST == True):
     agent = ValueIterationAgent(Yahtzee.Yahtzee())
-    agent.run_value_iteration(1, save_to_file=True)
+    # agent.run_value_iteration(1, save_to_file=False)
+    # print(get_reroll_all_dice_probabilities())
+    rewards = []
+    for _ in range(100):
+        dices = random.choices(list(get_reroll_all_dice_probabilities().keys()), weights=list(get_reroll_all_dice_probabilities().values()))[0]
+        state = (dices, (0,0,0,0,0,0,0), 2)
+        total_reward = 0
+        while True:
+            action = agent.get_action_from_state(state)
+            if action == None:
+                break
+            total_reward += get_reward(state, action)
+            print(f"{state = }")
+            print(f"{action = }")
+            print(f"{total_reward = }")
+            print("-------------------------")
+            state = perform_action(state, action)[0]
+        rewards.append(total_reward)
+
+    rewards = np.array(rewards)
+    print(f"Max: {np.max(rewards)}" )
+    print(f"Mean: {np.sum(rewards) / len(rewards)}")
+    print(f"Min: {np.min(rewards)}")
+    print(f"Std Dev: {np.std(rewards)}")
+
+
+
+
+
 
