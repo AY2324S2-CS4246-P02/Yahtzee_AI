@@ -1,5 +1,4 @@
 import numpy as np
-from random import choice
 from typing import List
 
 DIE_CHOICES = [i for i in range(1, 7)]
@@ -8,14 +7,20 @@ NUM_DICE = 5
 NUM_CATEGORIES = 7
 MAX_REROLLS = 3  # includes initial roll
 EMPTY = np.iinfo(np.uint8).max  # = 255
+PRNG_SEED = 77
+PRNG = np.random.RandomState(PRNG_SEED)
 
 class Yahtzee:
 
-    def __init__(self):
+    def __init__(
+            self,
+            return_sorted_dice: bool = False
+        ):
         # Stage setup.
         self.dice = np.zeros(NUM_DICE, dtype=np.uint8)
         self.scoresheet = np.full(NUM_CATEGORIES, EMPTY, dtype=np.uint8)
         self.log = np.empty((NUM_CATEGORIES, 3), dtype=object)
+        
         # Log is (NUM_CATEGORIES x 3) array where:
         #       First column: Category chosen
         #       Second column: Score written
@@ -26,6 +31,7 @@ class Yahtzee:
         # Initial dice roll.
         self.round = 0
         self.rerolls = MAX_REROLLS
+        self.return_sorted_dice = return_sorted_dice
         self.roll_dice(np.array([False, False, False, False, False]))
 
     def reset(self):
@@ -73,7 +79,7 @@ class Yahtzee:
         # TRUE MEANS TO KEEP; FALSE MEANS TO REROLL
         for i, choose in enumerate(indices[:5]):
             if not choose:
-                self.dice[i] = choice(DIE_CHOICES)
+                self.dice[i] = PRNG.choice(DIE_CHOICES)
         
         # Logging result of dice roll.
         if self.log[self.round, 2] == None:
@@ -83,6 +89,9 @@ class Yahtzee:
         
         self.rerolls -= 1
 
+        # if flagged to return sorted dice
+        if self.return_sorted_dice:
+            self.dice = np.sort(self.dice)
 
     def get_dice(self):
         return self.dice
@@ -127,7 +136,7 @@ class Yahtzee:
                 sheet.append(str(a))
             else:
                 sheet.append(f"--- ({p})")
-        sheet.append(self.get_bonus())
+        #sheet.append(self.get_bonus())
         sheet.append(self.calculate_score())
 
         return sheet
