@@ -34,6 +34,17 @@ class Yahtzee:
         self.return_sorted_dice = return_sorted_dice
         self.roll_dice(np.array([False, False, False, False, False]))
 
+    def set_state(
+            self,
+            dice: List[int],
+            categories_exclude: List[int],
+            rerolls: int = 2):
+        self.dice = np.array(dice)
+        for category in categories_exclude:
+            self.scoresheet[category] = 0
+        self.round = 7 - len(categories_exclude)
+        self.rerolls = rerolls
+
     def reset(self):
         self.round = 0
         self.rerolls = MAX_REROLLS
@@ -185,7 +196,6 @@ class Yahtzee:
         if check(dice):
             scoring = CATEGORIES_SCORING[category]
             score = scoring(dice)
-        
         # Write in the score.
         self.scoresheet[category] = score
         self.log[self.round, 0] = CATEGORIES_NAMES[category]
@@ -288,3 +298,10 @@ CATEGORIES = dict(
         CATEGORIES_CHECK
     )]
 )
+
+if __name__ == '__main__':
+    game = Yahtzee(True)
+    # dice = [1, 1, 1, 1, 6]
+    # categories available = [Four of a kind, Full House, Yahtzee]
+    game.set_state([1, 1, 1, 1, 6], [0, 3, 4, 6])
+    print(game.get_display_scoresheet())
