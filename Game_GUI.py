@@ -125,10 +125,20 @@ def main():
     
     clock = pygame.time.Clock()
 
-    selected_dice = []
+    selected_dice = [0, 1, 2, 3, 4]
+
+    rolling_animation = 60 ## Set to larger value for longer roll time
+
     while not exit: 
         clock.tick(60)
         reset_screen(screen, table_rect, dice_rect, selected_dice = selected_dice)
+
+        if rolling_animation:
+            rolling_animation -= 1
+            dice_rect.draw_dice_values(screen, [(str(random.randint(1,6)) if i in selected_dice else yahtzee.get_dice()[i]) for i in range(5)])
+            if rolling_animation == 0:
+                selected_dice = []
+            
 
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
@@ -142,16 +152,17 @@ def main():
                     else:
                         selected_dice.remove(a)
                 elif (a := table_rect.get_clicked_row(location)) is not None:
-                    print(Agent.Yahtzee.CATEGORIES_NAMES[a])
                     yahtzee.doAction(('KEEP', a))
+                    rolling_animation = 60
 
             elif event.type == pygame.KEYDOWN:
                 try:
-                    yahtzee.roll_dice(selected_dice)
-                    selected_dice = []
+                    yahtzee.doAction(("REROLL", selected_dice))
+                    rolling_animation = 60
                 except Exception as e:
                     if e.args[0] == 'You have no rerolls left.':
                         print("No rerolls available")
+                        selected_dice = []
                         ## To continue adding stuff if necessary
 
 
